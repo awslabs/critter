@@ -1,0 +1,47 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+Resources:
+  CompliantRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: "sts:AssumeRole"
+      ManagedPolicyArns:
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/CloudWatchAgentServerPolicy"
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AmazonSSMManagedInstanceCore"
+  CompliantRoleInstanceProfile:
+    Type: "AWS::IAM::InstanceProfile"
+    Properties:
+      Roles: [!Ref CompliantRole]
+
+  NonCompliantRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: "sts:AssumeRole"
+      ManagedPolicyArns:
+        # ROLE IS MISSING A REQUIRED MANAGED POLICY
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AmazonSSMManagedInstanceCore"
+  NonCompliantRoleInstanceProfile:
+    Type: "AWS::IAM::InstanceProfile"
+    Properties:
+      Roles: [!Ref NonCompliantRole]
+
+Outputs:
+  ConfigRuleName:
+    Value: custom-ec2-role-required-policies
+  CompliantResourceIds:
+    Value: !Sub "${CompliantRole.RoleId}"
+  NonCompliantResourceIds:
+    Value: !Sub "${NonCompliantRole.RoleId}"

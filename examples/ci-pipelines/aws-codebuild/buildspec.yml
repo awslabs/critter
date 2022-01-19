@@ -1,0 +1,41 @@
+# https://docs.aws.amazon.com/codebuild/latest/userguide/build-spec-ref.html#build-spec-ref-syntax
+
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.x
+  pre_build:
+    commands:
+      - aws --version
+      - aws sts get-caller-identity
+
+      - python --version
+      - pip --version
+
+      - pip install ./critter-*
+      - pip freeze
+      - critter -h
+  build:
+    commands:
+      - set -eux
+
+      - echo "Deploying Config rules CloudFormation templates"
+      - chmod u+x ./deploy-rules.sh
+      - ./deploy-rules.sh
+
+      - echo "Testing Config rules with critter"
+
+      - critter ./test-stacks/cw-loggroup-retention-period.yml --delete-stack Always --trigger-rule-evaluation
+      - critter ./test-stacks/ec2-role-required-policies.yml --delete-stack Always --capabilities CAPABILITY_IAM
+
+    finally:
+      # Delete CloudFormation stacks
+      - STACK_STATUS_FILTER='CREATE_IN_PROGRESS CREATE_FAILED CREATE_COMPLETE ROLLBACK_IN_PROGRESS ROLLBACK_FAILED ROLLBACK_COMPLETE DELETE_IN_PROGRESS DELETE_FAILED UPDATE_IN_PROGRESS UPDATE_COMPLETE_CLEANUP_IN_PROGRESS UPDATE_COMPLETE UPDATE_FAILED UPDATE_ROLLBACK_IN_PROGRESS UPDATE_ROLLBACK_FAILED UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS UPDATE_ROLLBACK_COMPLETE REVIEW_IN_PROGRESS IMPORT_IN_PROGRESS IMPORT_COMPLETE IMPORT_ROLLBACK_IN_PROGRESS IMPORT_ROLLBACK_FAILED IMPORT_ROLLBACK_COMPLETE'
+      - CONFIG_RULE_STACKS="$(aws cloudformation list-stacks --stack-status-filter $STACK_STATUS_FILTER --query 'StackSummaries[?starts_with(StackName,`CritterCiExample-`)][StackName]' --output text)"
+      - CRITTER_TEST_STACKS="$(aws cloudformation list-stacks --stack-status-filter $STACK_STATUS_FILTER --query 'StackSummaries[?starts_with(StackName,`Critter-`)][StackName]' --output text)"
+      - for STACK_NAME in $CONFIG_RULE_STACKS $CRITTER_TEST_STACKS; do aws cloudformation delete-stack --stack-name "$STACK_NAME"; done

@@ -1,0 +1,4 @@
+README.md
+requirements*.txt
+*.py
+.pytest_cache/

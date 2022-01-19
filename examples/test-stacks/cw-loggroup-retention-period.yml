@@ -1,0 +1,26 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+Resources:
+  CompliantLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 365
+
+  NonCompliantLogGroup1:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 3 # MinRetentionTime 365 days
+
+  NonCompliantLogGroup2:
+    Type: AWS::Logs::LogGroup
+
+Outputs:
+  ConfigRuleName:
+    Value: managed-cw-loggroup-retention-period
+  CompliantResourceIds:
+    Value: !Sub "${CompliantLogGroup}"
+  NonCompliantResourceIds:
+    Value: !Sub "${NonCompliantLogGroup1},${NonCompliantLogGroup2}"
+  SkipWaitForResourceRecording:
+    Value: "True" # AWS::Logs::LogGroup resources are not recorded by AWS Config

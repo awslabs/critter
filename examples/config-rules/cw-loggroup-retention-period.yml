@@ -1,0 +1,18 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+Resources:
+  ConfigRule:
+    Type: AWS::Config::ConfigRule
+    Properties:
+      ConfigRuleName: managed-cw-loggroup-retention-period
+      Description: >-
+        Checks whether Amazon CloudWatch LogGroup retention period is set to specific number of
+        days. The rule is NON_COMPLIANT if the retention period is not set or is less than the
+        configured retention period.
+      Scope:
+        ComplianceResourceTypes: ["AWS::Logs::LogGroup"]
+      MaximumExecutionFrequency: TwentyFour_Hours
+      Source:
+        Owner: AWS
+        SourceIdentifier: CW_LOGGROUP_RETENTION_PERIOD_CHECK

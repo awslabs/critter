@@ -1,0 +1,14 @@
+#!/usr/bin/env python
+
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+import sys
+from critter import Stack
+
+
+if __name__ == "__main__":
+    test_stack = Stack()
+    test_stack.parse_args(sys.argv[1:])
+    test_stack.initialize_boto_clients()
+    test_stack.test()

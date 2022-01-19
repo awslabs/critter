@@ -1,0 +1,66 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+Resources:
+  ConfigRule:
+    Type: AWS::Config::ConfigRule
+    DependsOn: EvaluationFunctionConfigPermission
+    Properties:
+      ConfigRuleName: custom-ec2-role-required-policies
+      Description: >-
+        IAM roles with an associated IAM instance profile must have these managed policies attached
+      InputParameters:
+        requiredAwsManagedPolicyArns:
+          - !Sub "arn:${AWS::Partition}:iam::aws:policy/CloudWatchAgentServerPolicy"
+          - !Sub "arn:${AWS::Partition}:iam::aws:policy/AmazonSSMManagedInstanceCore"
+      Scope:
+        ComplianceResourceTypes: ["AWS::IAM::Role"]
+      Source:
+        Owner: CUSTOM_LAMBDA
+        SourceIdentifier: !Sub "${EvaluationFunction.Arn}"
+        SourceDetails:
+          - MessageType: ConfigurationItemChangeNotification
+            EventSource: aws.config
+          - MessageType: OversizedConfigurationItemChangeNotification
+            EventSource: aws.config
+          # - MessageType: ScheduledNotification
+          #   MaximumExecutionFrequency: TwentyFour_Hours
+          #   EventSource: aws.config
+
+  EvaluationFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Role: !Sub "${EvaluationFunctionRole.Arn}"
+      Handler: ec2_role_required_policies.handler
+      Timeout: 20
+      Runtime: python3.8
+      Code: ./lambda
+
+  EvaluationFunctionConfigPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Sub "${EvaluationFunction.Arn}"
+      Action: lambda:InvokeFunction
+      Principal: config.amazonaws.com
+
+  EvaluationFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: ["sts:AssumeRole"]
+      ManagedPolicyArns:
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+      Policies:
+        - PolicyName: Inline
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Resource: "*"
+                Action:
+                  - config:PutEvaluations

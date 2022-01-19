@@ -39,6 +39,47 @@ To send us a pull request, please:
 GitHub provides additional document on [forking a repository](https://help.github.com/articles/fork-a-repo/) and
 [creating a pull request](https://help.github.com/articles/creating-a-pull-request/).
 
+## Local Development
+
+Follow the guide below to begin local development on the tool. This relies on local [boto3 and AWS CLI configuration](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html).
+
+```shell
+# Create a python venv for this project
+python -m venv .venv
+source .venv/bin/activate
+
+# Install critter from current dir in editable mode and other development dependencies
+pip install --upgrade -r requirements-dev.txt
+
+# Show the help to verify your install is working as expected
+critter -h
+
+# Deploy the example Config rules from ./examples/config-rules/ to an AWS account (requires AWS CLI).
+# Specify an existing S3 bucket in the AWS account. CloudFormation template resources (Lambda function code)
+# will be uploaded to this bucket before the Config rules are deployed using CloudFormation. See
+# ./deploy-rules.sh to learn more about this process.
+./deploy-rules.sh <s3-bucket-name>
+
+# Run the example test stacks with a mixture of arguments to verify functionality
+critter examples/test-stacks/cw-loggroup-retention-period.yml \
+  --trigger-rule-evaluation \
+  --stack-tags '[{"Key": "CritterCustomTagKey1", "Value": "CritterCustomTagValue1"}, {"Key": "CritterCustomTagKey2", "Value": "CritterCustomTagValue2"}]'
+critter examples/test-stacks/ec2-role-required-policies.yml \
+  --trigger-rule-evaluation \
+  --capabilities CAPABILITY_IAM \
+  --delete-stack Never \
+  --stack-name Critter-Ec2RoleRequiredPolicies
+
+# Run unit tests
+python -m pytest -s -vv
+```
+
+Be sure to manually test for expected test successes _and_ expected test failures. Code changes should also be run thru [`black`](https://github.com/psf/black) and [`flake8`](https://github.com/pycqa/flake8) for formatting and linting.
+
+```shell
+black .
+flake8 $(find * -type f -name '*.py')
+```
 
 ## Finding contributions to work on
 Looking at the existing issues is a great way to find something to contribute on. As our projects, by default, use the default GitHub issue labels (enhancement/bug/duplicate/help wanted/invalid/question/wontfix), looking at any 'help wanted' issues is a great place to start.

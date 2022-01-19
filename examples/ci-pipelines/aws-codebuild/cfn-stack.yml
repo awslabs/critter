@@ -1,0 +1,125 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+Parameters:
+  CodeZipS3BucketName:
+    Type: String
+    Description: >-
+      S3 bucket name containing CodeCommit repository code ZIP file. Example: "my-bucket"
+  CodeZipS3Key:
+    Type: String
+    Description: >-
+      S3 bucket key to CodeCommit repository code ZIP file. Example: "path/to/codecommit-repo.zip"
+
+Resources:
+  CfnPackageS3Bucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  CodeCommitRepository:
+    Type: AWS::CodeCommit::Repository
+    Properties:
+      RepositoryName: !Ref "AWS::StackName"
+      Code:
+        BranchName: main
+        S3:
+          Bucket: !Ref CodeZipS3BucketName
+          Key: !Ref CodeZipS3Key
+
+  CodeBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Ref "AWS::StackName"
+      Description: Deploys AWS Config rules and tests them using critter
+      ConcurrentBuildLimit: 1
+      ServiceRole: !Sub "${CodeBuildServiceRole.Arn}"
+      Visibility: PRIVATE
+      Source:
+        Type: CODECOMMIT
+        Location: !Sub "${CodeCommitRepository.CloneUrlHttp}"
+      SourceVersion: main
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
+        EnvironmentVariables:
+          - Name: "CFN_PACKAGE_S3_BUCKET"
+            Value: !Ref CfnPackageS3Bucket
+
+  CodeBuildServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: ["sts:AssumeRole"]
+      Policies:
+        - PolicyName: Inline
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              # Permissions needed to provision Config rules Cloudformation stacks and critter test
+              # CloudFormation stacks
+              - Effect: Allow
+                Action:
+                  - cloudformation:*ChangeSet*
+                  - cloudformation:*GetTemplateSummary*
+                  - cloudformation:*Stack*
+                  - codecommit:GitPull
+                  - config:*Rule*
+                  - config:BatchGetResourceConfig
+                  - iam:*InstanceProfile*
+                  - iam:*Role*
+                  - lambda:*Function*
+                  - lambda:*Permission*
+                  - logs:*LogGroup*
+                  - logs:*LogStream*
+                  - logs:PutLogEvents
+                  - logs:PutRetentionPolicy
+                  - s3:Get*
+                  - s3:PutObject
+                Resource: "*"
+
+  RepoEventsRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: !Sub >-
+        CodeCommit repository ${CodeCommitRepository.Name} triggering CodeBuild project ${CodeBuildProject}
+      EventPattern:
+        source: [aws.codecommit]
+        detail-type: [CodeCommit Repository State Change]
+        resources: [!Sub "${CodeCommitRepository.Arn}"]
+      Targets:
+        - Id: !Sub "${CodeCommitRepository.Name}-${CodeBuildProject}"
+          Arn: !Sub "${CodeBuildProject.Arn}"
+          RoleArn: !Sub "${RepoEventsRuleRole.Arn}"
+
+  RepoEventsRuleRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: "sts:AssumeRole"
+      Policies:
+        - PolicyName: Inline
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: codebuild:StartBuild
+                Resource: !Sub "${CodeBuildProject.Arn}"
