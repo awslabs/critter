@@ -12,12 +12,12 @@ here = pathlib.Path(__file__).parent.resolve()
 long_description = (here / "README.md").read_text(encoding="utf-8")
 
 # Load version from file
-version = (here / "critter" / "VERSION").read_text(encoding="utf-8").strip()
+exec(open("critter/version.py").read())
 
 # https://packaging.python.org/guides/distributing-packages-using-setuptools/#setup-args
 setup(
     name="critter",
-    version=version,
+    version=__version__,  # noqa: F821
     description="AWS Config Rule Integration TesTER",
     license="Apache License 2.0",
     long_description=long_description,

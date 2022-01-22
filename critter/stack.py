@@ -11,6 +11,7 @@ import logging
 import os
 import time
 import traceback
+from .version import __version__
 
 logging.basicConfig(format="%(message)s")
 logger = logging.getLogger("")
@@ -66,19 +67,8 @@ class Stack:
         DELETE_STACK_NEVER,
     ]
 
-    VERSION_FILE = "VERSION"
-    VERSION = ""
-
-    def __init__(self):
-        try:
-            version_file = os.path.join(os.path.dirname(__file__), self.VERSION_FILE)
-            with open(version_file) as f:
-                self.VERSION = f.readlines()[0].strip()
-        except FileNotFoundError:
-            logger.error("Error - Critter version could not be detected (version file 'self.VERSION_FILE' not found)")
-
     def parse_args(self, args):
-        parser = argparse.ArgumentParser(description=f"critter {self.VERSION} - AWS Config Rule Integration TesTER")
+        parser = argparse.ArgumentParser(description=f"critter {__version__} - AWS Config Rule Integration TesTER")
 
         parser.add_argument(
             "template",

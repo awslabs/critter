@@ -1,4 +1,4 @@
-# `critter` - AWS <ins>**C**</ins>onfig <ins>**R**</ins>ule <ins>**I**</ins>ntegration <ins>**T**</ins>es<ins>**TER**</ins>
+# `critter` - AWS *C*onfig *R*ule *I*ntegration *T*es*TER*
 
 `critter` enables AWS Config rule integration testing. Use it to validate that AWS Config rules evaluate resources as expected.
 
@@ -47,10 +47,10 @@ Usage of `critter` within the Config rule development workflow looks like this:
 
 ## Install
 
-Install with [Python `pip`](https://docs.python.org/3/installing/index.html) from [the GitHub project](https://github.com/awslabs/critter) using git + ssh:
+Install with [Python `pip`](https://docs.python.org/3/installing/index.html):
 
 ```shell
-pip install git+ssh://git@github.com:awslabs/critter.git
+pip install critter
 ```
 
 After `critter` is installed, you can verify the installation by showing the help: [`critter -h`](#cli-options).

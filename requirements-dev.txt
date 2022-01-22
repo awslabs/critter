@@ -3,3 +3,5 @@ black>=21.10b0
 flake8>=4.0.1
 cfn-lint>=0.56.0
 pytest>=6.2.5
+build>=0.7.0
+twine>=3.7.1
