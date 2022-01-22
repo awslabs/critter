@@ -17,11 +17,6 @@ Follow these steps to deploy this example into an AWS account. This will add all
 # and Region the example will be deployed to.
 S3_BUCKET_NAME='my-bucket'
 
-# Build distribution of critter
-cd ../../../
-python setup.py sdist --dist-dir "${OLDPWD}/"
-cd -
-
 # Package CodeCommit repo as zip file
 ZIP_FILE_NAME='codecommit-repo.zip'
 rm -f "$ZIP_FILE_NAME"

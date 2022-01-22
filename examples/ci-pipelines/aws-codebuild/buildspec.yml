@@ -17,8 +17,7 @@ phases:
       - python --version
       - pip --version
 
-      - pip install ./critter-*
-      - pip freeze
+      - pip install --quiet --upgrade critter
       - critter -h
   build:
     commands:
